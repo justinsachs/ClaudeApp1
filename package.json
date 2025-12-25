@@ -14,28 +14,39 @@
     "db:migrate": "ts-node src/server/db/migrations.ts",
     "test": "jest"
   },
-  "keywords": ["ai", "education", "course", "learning", "notebooklm"],
+  "keywords": [
+    "ai",
+    "education",
+    "course",
+    "learning",
+    "notebooklm"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
+    "bull": "^4.16.5",
     "cors": "^2.8.5",
+    "date-fns": "^2.30.0",
     "dotenv": "^16.3.1",
-    "sqlite3": "^5.1.6",
-    "uuid": "^9.0.1",
+    "express": "^4.18.2",
     "express-validator": "^7.0.1",
+    "ioredis": "^5.8.2",
+    "mammoth": "^1.11.0",
     "multer": "^1.4.5-lts.1",
-    "date-fns": "^2.30.0"
+    "pdf-parse": "^2.4.5",
+    "redis": "^5.10.0",
+    "sqlite3": "^5.1.6",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "@types/express": "^4.17.21",
     "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/multer": "^1.4.11",
     "@types/node": "^20.10.5",
     "@types/uuid": "^9.0.7",
-    "@types/multer": "^1.4.11",
-    "typescript": "^5.3.3",
-    "ts-node": "^10.9.2",
+    "concurrently": "^8.2.2",
     "nodemon": "^3.0.2",
-    "concurrently": "^8.2.2"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
   }
 }

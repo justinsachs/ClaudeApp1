@@ -14,6 +14,7 @@ import enrollmentRoutes from './routes/enrollments';
 import sectionRoutes from './routes/sections';
 import sourceRoutes from './routes/sources';
 import assessmentRoutes from './routes/assessments';
+import uploadRoutes from './routes/uploads';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -36,6 +37,7 @@ app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/sections', sectionRoutes);
 app.use('/api/sources', sourceRoutes);
 app.use('/api/assessments', assessmentRoutes);
+app.use('/api/uploads', uploadRoutes);
 
 // Health check
 app.get('/health', (req: Request, res: Response) => {
@@ -83,6 +85,11 @@ async function start() {
     console.log('Initializing database...');
     await initializeDatabase();
     console.log('Database initialized successfully');
+
+    // Start background job processors
+    console.log('Starting background job processors...');
+    require('./jobs/processors/contentProcessor');
+    console.log('Background workers started');
 
     app.listen(PORT, () => {
       console.log(`\n🚀 AI Course Platform server running on port ${PORT}`);

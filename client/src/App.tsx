@@ -4,6 +4,8 @@ import CourseCreator from './pages/CourseCreator'
 import CourseList from './pages/CourseList'
 import LearnerJourney from './pages/LearnerJourney'
 import LearnerList from './pages/LearnerList'
+import SourceManager from './pages/SourceManager'
+import SectionLearning from './pages/SectionLearning'
 
 function App() {
   return (
@@ -37,6 +39,12 @@ function App() {
                     Learners
                   </Link>
                   <Link
+                    to="/sources"
+                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  >
+                    Sources
+                  </Link>
+                  <Link
                     to="/create-course"
                     className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
                   >
@@ -54,8 +62,10 @@ function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/courses" element={<CourseList />} />
             <Route path="/learners" element={<LearnerList />} />
+            <Route path="/sources" element={<SourceManager />} />
             <Route path="/create-course" element={<CourseCreator />} />
             <Route path="/learn/:enrollmentId" element={<LearnerJourney />} />
+            <Route path="/learn/:enrollmentId/section/:sectionId" element={<SectionLearning />} />
           </Routes>
         </main>
       </div>
