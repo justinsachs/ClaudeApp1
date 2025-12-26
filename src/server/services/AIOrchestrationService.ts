@@ -153,11 +153,18 @@ export class AIOrchestrationService {
 
   /**
    * Generate NotebookLM instruction content with resolved prompt
+   * IMPORTANT: Calibration results customize the content based on learner's responses
    */
   async generateNotebookLMInstruction(
     notebookId: string,
     context: SectionContext,
-    calibrationResults?: { emphasis_areas?: string[] }
+    calibrationResults?: {
+      knowledge_gaps?: string[];
+      emphasis_areas?: string[];
+      risk_flags?: string[];
+      pacing_adjustment?: 'slower' | 'standard' | 'faster';
+      confidence_assessment?: number;
+    }
   ): Promise<{
     video: { url: string; transcript: string };
     podcast: { url: string; transcript: string };
@@ -166,7 +173,15 @@ export class AIOrchestrationService {
   }> {
     console.log(`[AIOrchestration] Generating NotebookLM instruction for: ${context.section_title}`);
 
-    // Resolve the main NotebookLM instruction prompt
+    if (calibrationResults) {
+      console.log(`[AIOrchestration] Customizing content based on calibration results:`);
+      console.log(`  - Knowledge gaps: ${calibrationResults.knowledge_gaps?.join(', ') || 'none'}`);
+      console.log(`  - Emphasis areas: ${calibrationResults.emphasis_areas?.join(', ') || 'none'}`);
+      console.log(`  - Pacing: ${calibrationResults.pacing_adjustment || 'standard'}`);
+      console.log(`  - Confidence: ${calibrationResults.confidence_assessment || 'N/A'}/10`);
+    }
+
+    // Resolve the main NotebookLM instruction prompt with ALL calibration data
     const resolved = await this.promptEngine.resolvePrompt('notebooklm_main', {
       deployment_id: context.deployment_id,
       course_id: context.course_id,
@@ -176,9 +191,18 @@ export class AIOrchestrationService {
         section_title: context.section_title,
         section_objectives: JSON.stringify(context.section_objectives),
         source_content: context.source_content || '',
+        // Calibration results that customize the content
+        calibration_knowledge_gaps: calibrationResults?.knowledge_gaps
+          ? JSON.stringify(calibrationResults.knowledge_gaps)
+          : '[]',
         calibration_emphasis_areas: calibrationResults?.emphasis_areas
           ? JSON.stringify(calibrationResults.emphasis_areas)
-          : 'No specific emphasis'
+          : '[]',
+        calibration_risk_flags: calibrationResults?.risk_flags
+          ? JSON.stringify(calibrationResults.risk_flags)
+          : '[]',
+        calibration_pacing: calibrationResults?.pacing_adjustment || 'standard',
+        calibration_confidence: calibrationResults?.confidence_assessment || 5
       }
     });
 

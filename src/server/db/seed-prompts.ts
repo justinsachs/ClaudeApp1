@@ -235,6 +235,8 @@ Use {{coaching_tone}} tone. Be encouraging and supportive.`,
     prompt_type: 'notebooklm_main',
     template_text: `Create comprehensive instructional content for "{{section_title}}" grounded in the provided source materials.
 
+IMPORTANT: This content must be customized based on the learner's calibration interview responses.
+
 Source content:
 {{source_content}}
 
@@ -248,22 +250,55 @@ Business context:
 - Licensing requirements: {{licensing_requirements}}
 - Compliance: {{compliance_standard}}
 
-Generate content in 5 formats:
-1. Video explanation (8-12 minutes)
-2. Podcast walkthrough (10-15 minutes)
-3. Written summary (1500-2000 words)
-4. Practical examples specific to {{business_name}}
-5. Practice problems with solutions
+LEARNER CALIBRATION RESULTS (from chatbot interview):
 
-Emphasis areas based on calibration:
-{{calibration_emphasis_areas|No specific emphasis}}
+Knowledge Gaps Identified:
+{{calibration_knowledge_gaps|[]}}
+→ Address these gaps explicitly in your explanations. Start with foundational concepts for these areas.
+
+Emphasis Areas (what learner wants to focus on):
+{{calibration_emphasis_areas|[]}}
+→ Spend extra time on these topics. Provide more examples and deeper explanations.
+
+Risk Flags (misconceptions or concerns):
+{{calibration_risk_flags|[]}}
+→ Proactively address these misconceptions. Clarify common misunderstandings.
+
+Pacing Adjustment:
+{{calibration_pacing|standard}}
+→ slower: More detailed explanations, repeat key concepts, additional examples
+→ standard: Balanced pace with clear explanations
+→ faster: Advanced treatment, assume more background knowledge
+
+Learner Confidence Level:
+{{calibration_confidence|5}}/10
+→ Low confidence (1-4): Encouraging tone, build up gradually, celebrate progress
+→ Medium confidence (5-7): Balanced approach, challenge appropriately
+→ High confidence (8-10): Advanced examples, edge cases, professional scenarios
+
+Generate content in 5 formats:
+1. Video explanation (8-12 minutes) - Adjust depth based on calibration
+2. Podcast walkthrough (10-15 minutes) - Address knowledge gaps naturally in conversation
+3. Written summary (1500-2000 words) - Emphasize areas from calibration
+4. Practical examples specific to {{business_name}} - Use learner's context
+5. Practice problems with solutions - Target identified knowledge gaps
+
+Content Customization Instructions:
+- If knowledge gaps include foundational concepts, start there before advancing
+- For emphasis areas, provide 2-3x more examples than other topics
+- If risk flags indicate misconceptions, explicitly address and correct them
+- Adjust technical depth based on pacing preference
+- Match tone and encouragement to confidence level
+- Use {{business_name}} scenarios that relate to learner's background
 
 All content must:
 - Be grounded in source materials
 - Address {{business_name}}-specific requirements
 - Use real-world examples from {{industry}}
 - Include compliance considerations
-- Match {{pace_preference}} pace`,
+- Match learner's pacing preference ({{calibration_pacing}})
+- Fill identified knowledge gaps
+- Emphasize areas the learner indicated interest in`,
     description: 'Main prompt for NotebookLM to generate all instructional artifacts',
     version: '1.0',
     variables: [
