@@ -1,12 +1,13 @@
 /**
  * AI Orchestration Service
- * Integrates PromptEngine with AI services (NotebookLM, Sora, HeyGen)
+ * Integrates PromptEngine with AI services (NotebookLM, Sora, HeyGen, ChatGPT/Claude)
  * Resolves prompts with context before making AI service calls
  */
 
 import { Database } from 'sqlite3';
 import { PromptEngine } from './PromptEngine';
 import { AIServiceFactory, NotebookLMService, SoraService, HeyGenService } from './AIServices';
+import { ChatbotServiceFactory, ChatbotService, ChatMessage } from './ChatbotService';
 import { PromptResolutionContext } from '../types/prompt-models';
 
 export interface SectionContext {
@@ -37,12 +38,14 @@ export class AIOrchestrationService {
   private notebookLM: NotebookLMService;
   private sora: SoraService;
   private heygen: HeyGenService;
+  private chatbot: ChatbotService;
 
-  constructor(database: Database) {
+  constructor(database: Database, chatbotProvider?: 'openai' | 'anthropic') {
     this.promptEngine = new PromptEngine(database);
     this.notebookLM = AIServiceFactory.getNotebookLMService();
     this.sora = AIServiceFactory.getSoraService();
     this.heygen = AIServiceFactory.getHeyGenService();
+    this.chatbot = ChatbotServiceFactory.getChatbotService(chatbotProvider);
   }
 
   /**
@@ -76,10 +79,15 @@ export class AIOrchestrationService {
   }
 
   /**
-   * Run calibration chatbot interview with resolved prompt
+   * Start calibration chatbot interview with resolved prompt
+   * Returns the system prompt to initialize the conversation
    */
-  async runCalibrationInterview(context: CalibrationContext): Promise<string> {
-    console.log(`[AIOrchestration] Running calibration for learner: ${context.learner_name}`);
+  async startCalibrationInterview(context: CalibrationContext): Promise<{
+    conversationId: string;
+    systemPrompt: string;
+    firstMessage: string;
+  }> {
+    console.log(`[AIOrchestration] Starting calibration for learner: ${context.learner_name}`);
 
     const resolved = await this.promptEngine.resolvePrompt('calibration', {
       deployment_id: context.deployment_id,
@@ -95,11 +103,52 @@ export class AIOrchestrationService {
       }
     });
 
-    console.log(`[AIOrchestration] Calibration prompt resolved`);
+    console.log(`[AIOrchestration] Calibration prompt resolved - using ${process.env.CHATBOT_PROVIDER || 'OpenAI'}`);
 
-    // In real implementation, this would be sent to a chatbot interface
-    // For now, return the resolved prompt (the chatbot instructions)
-    return resolved.resolved_text;
+    const conversationId = `cal_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
+    // Send first message to get the chatbot's opening
+    const response = await this.chatbot.sendMessage(
+      conversationId,
+      resolved.resolved_text,
+      [],
+      `Hello! I'm ${context.learner_name} and I'm ready to begin the calibration interview for "${context.section_title}".`
+    );
+
+    return {
+      conversationId,
+      systemPrompt: resolved.resolved_text,
+      firstMessage: response.message
+    };
+  }
+
+  /**
+   * Continue calibration interview - send learner message and get chatbot response
+   */
+  async continueCalibrationInterview(
+    conversationId: string,
+    systemPrompt: string,
+    conversationHistory: ChatMessage[],
+    learnerMessage: string
+  ): Promise<{
+    message: string;
+    isComplete: boolean;
+    calibrationResults?: any;
+  }> {
+    console.log(`[AIOrchestration] Continuing calibration conversation: ${conversationId}`);
+
+    const response = await this.chatbot.sendMessage(
+      conversationId,
+      systemPrompt,
+      conversationHistory,
+      learnerMessage
+    );
+
+    return {
+      message: response.message,
+      isComplete: response.is_complete,
+      calibrationResults: response.calibration_results
+    };
   }
 
   /**
@@ -136,13 +185,13 @@ export class AIOrchestrationService {
     console.log(`[AIOrchestration] NotebookLM prompt resolved (${resolved.resolved_text.length} chars)`);
 
     // Generate all three formats using the resolved prompt
-    // In real implementation, the resolved prompt would be sent to NotebookLM
-    // which would generate all artifacts grounded in source materials
+    // The resolved prompt is passed to NotebookLM to guide content generation
+    // NotebookLM will generate all artifacts grounded in source materials
 
     const [video, podcast, summary] = await Promise.all([
-      this.notebookLM.generateVideo(notebookId, context.section_title),
-      this.notebookLM.generatePodcast(notebookId, context.section_title),
-      this.notebookLM.generateSummary(notebookId, context.section_title)
+      this.notebookLM.generateVideo(notebookId, context.section_title, resolved.resolved_text),
+      this.notebookLM.generatePodcast(notebookId, context.section_title, resolved.resolved_text),
+      this.notebookLM.generateSummary(notebookId, context.section_title, resolved.resolved_text)
     ]);
 
     return {
@@ -154,9 +203,12 @@ export class AIOrchestrationService {
   }
 
   /**
-   * Generate assessment questions with resolved prompt
+   * Generate assessment questions with resolved prompt using NotebookLM
    */
-  async generateAssessment(context: SectionContext): Promise<{
+  async generateAssessment(
+    notebookId: string,
+    context: SectionContext
+  ): Promise<{
     questions: any[];
     resolvedPrompt: string;
   }> {
@@ -173,21 +225,13 @@ export class AIOrchestrationService {
       }
     });
 
-    console.log(`[AIOrchestration] Assessment prompt resolved`);
+    console.log(`[AIOrchestration] Assessment prompt resolved - using NotebookLM for question generation`);
 
-    // In real implementation, this would call an AI service to generate questions
-    // For now, return mock questions
-    const mockQuestions = [
-      {
-        id: 'q1',
-        question_text: `What are the key ${context.section_title} concepts?`,
-        options: ['Option A', 'Option B', 'Option C', 'Option D'],
-        correct_answer: 'Option A'
-      }
-    ];
+    // Use NotebookLM to generate assessment questions grounded in source materials
+    const result = await this.notebookLM.generateAssessment(notebookId, resolved.resolved_text);
 
     return {
-      questions: mockQuestions,
+      questions: result.questions,
       resolvedPrompt: resolved.resolved_text
     };
   }

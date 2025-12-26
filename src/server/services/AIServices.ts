@@ -4,9 +4,10 @@
 
 export interface NotebookLMService {
   createNotebook(courseId: string, title: string, sources: string[]): Promise<string>;
-  generateVideo(notebookId: string, topic: string): Promise<{ url: string; transcript: string }>;
-  generatePodcast(notebookId: string, topic: string): Promise<{ url: string; transcript: string }>;
-  generateSummary(notebookId: string, topic: string): Promise<string>;
+  generateVideo(notebookId: string, topic: string, instructionPrompt?: string): Promise<{ url: string; transcript: string }>;
+  generatePodcast(notebookId: string, topic: string, instructionPrompt?: string): Promise<{ url: string; transcript: string }>;
+  generateSummary(notebookId: string, topic: string, instructionPrompt?: string): Promise<string>;
+  generateAssessment(notebookId: string, assessmentPrompt: string): Promise<{ questions: any[] }>;
   askQuestion(notebookId: string, question: string): Promise<string>;
 }
 
@@ -90,6 +91,52 @@ Host 2: Absolutely! Let me walk you through a real-world scenario...`;
 - Review the material covered
 - Practice with exercises
 - Apply knowledge in practical scenarios`;
+  }
+
+  async generateAssessment(notebookId: string, assessmentPrompt: string): Promise<{ questions: any[] }> {
+    await this.delay(800);
+
+    // Mock assessment questions
+    // In real implementation, NotebookLM would generate questions grounded in source materials
+    console.log(`[NotebookLM Mock] Generating assessment for notebook: ${notebookId}`);
+
+    const mockQuestions = [
+      {
+        id: 'q1',
+        type: 'multiple_choice',
+        question_text: 'What is the primary concept covered in this section?',
+        options: [
+          'Fundamental principles and their application',
+          'Advanced theoretical frameworks',
+          'Historical context and background',
+          'Future trends and predictions'
+        ],
+        correct_answer: 'Fundamental principles and their application',
+        explanation: 'Based on the source materials, this section focuses on foundational concepts and practical applications.'
+      },
+      {
+        id: 'q2',
+        type: 'scenario',
+        question_text: 'Given a real-world scenario where you need to apply these concepts, what would be the best approach?',
+        rubric: {
+          excellent: 'Demonstrates deep understanding and practical application',
+          good: 'Shows understanding with minor gaps',
+          needs_improvement: 'Missing key concepts or misapplication'
+        }
+      },
+      {
+        id: 'q3',
+        type: 'explain_back',
+        question_text: 'In your own words, explain the key takeaway from this section and how it applies to your work.',
+        rubric: {
+          excellent: 'Clear explanation with specific examples',
+          good: 'Generally accurate with some detail',
+          needs_improvement: 'Vague or incomplete explanation'
+        }
+      }
+    ];
+
+    return { questions: mockQuestions };
   }
 
   async askQuestion(notebookId: string, question: string): Promise<string> {

@@ -34,14 +34,14 @@ The system supports 7 prompt types covering all AI interactions:
 |------------|---------|------------|
 | `system` | Global orchestrator with hard rules | All |
 | `sora_intro` | Section welcome video script | Sora |
-| `calibration` | Pre-learning chatbot interview | Internal |
+| `calibration` | Pre-learning chatbot interview | **ChatGPT/Claude** |
 | `notebooklm_main` | Comprehensive instruction generation | NotebookLM |
 | `notebooklm_video` | Video explanation (3.1) | NotebookLM |
 | `notebooklm_podcast` | Podcast walkthrough (3.2) | NotebookLM |
 | `notebooklm_summary` | Written summary (3.3) | NotebookLM |
 | `notebooklm_examples` | Examples (3.4) | NotebookLM |
 | `notebooklm_practice` | Practice problems (3.5) | NotebookLM |
-| `verification` | Assessment question generation | Internal |
+| `verification` | Assessment question generation | **NotebookLM** |
 | `remediation` | Re-teaching after failed assessment | Internal |
 | `heygen_wrapup` | Section completion video script | HeyGen |
 
