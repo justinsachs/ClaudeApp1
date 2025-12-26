@@ -30,9 +30,9 @@ A comprehensive AI-powered course creation and delivery platform implementing th
 - **Prompt Architecture**: Tenant-specific AI prompt customization system
 - **Mock Services**: Development-ready mock implementations (replace with real APIs)
 
-### 🎯 Prompt Architecture System (NEW!)
+### 🎯 Prompt Architecture System
 
-The platform now includes a comprehensive **tenant-specific prompt management system**:
+The platform includes a comprehensive **tenant-specific prompt management system**:
 
 - **7 Prompt Types**: System orchestrator, Sora intro, Calibration, NotebookLM (5 variants), Verification, Remediation, HeyGen wrap-up
 - **Hierarchical Customization**: Global → Deployment → Course → Section → Learner variable resolution
@@ -42,6 +42,35 @@ The platform now includes a comprehensive **tenant-specific prompt management sy
 - **Audit Trail**: Complete logging of all prompt resolutions
 
 See [PROMPT_ARCHITECTURE_GUIDE.md](./PROMPT_ARCHITECTURE_GUIDE.md) for complete documentation.
+
+### 👥 Role-Based Access Control (RBAC) (NEW!)
+
+The platform implements a **4-role system** with distinct workflows:
+
+**Roles:**
+1. **Master Admin** - Full platform control, deployment management, global settings
+2. **Admin Support** - User management, course assignments, support functions
+3. **Course Creator** - "Plug and play" course building with drag-and-drop interface
+4. **Student** - Takes assigned courses, personalized learning experience
+
+**Course Creator Features:**
+- 🎨 Drag-and-drop course builder (like website builders)
+- 📤 Upload source materials (PDF, DOCX) with automatic extraction
+- 📝 Define learning outcomes and section objectives
+- 🧩 Build sections maintaining 6-step structure for scalability
+- 👁️ Preview and validate before publishing
+- 🚀 One-click publish to make courses live
+- 📋 Draft management and course duplication
+
+**Student Features:**
+- 📚 Access assigned courses only
+- 🎯 Personalized calibration interviews (ChatGPT/Claude)
+- 📖 Customized instruction based on calibration results
+- ✅ Assessments with automatic grading
+- 🔄 Adaptive remediation if needed
+- 📊 Progress tracking and completion certificates
+
+See [RBAC_AND_ROLES_GUIDE.md](./RBAC_AND_ROLES_GUIDE.md) for complete documentation.
 
 ## 📋 Prerequisites
 

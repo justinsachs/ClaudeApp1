@@ -64,6 +64,40 @@ class Database {
 
       console.log('Prompt schema migrations completed');
     }
+
+    // Run RBAC schema
+    const rbacSchemaPath = path.join(__dirname, 'rbac_schema.sql');
+    if (fs.existsSync(rbacSchemaPath)) {
+      const rbacSchema = fs.readFileSync(rbacSchemaPath, 'utf8');
+
+      statements = rbacSchema
+        .split(';')
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+
+      for (const statement of statements) {
+        await this.run(statement);
+      }
+
+      console.log('RBAC schema migrations completed');
+
+      // Seed RBAC permissions
+      const rbacSeedPath = path.join(__dirname, 'seed-rbac.sql');
+      if (fs.existsSync(rbacSeedPath)) {
+        const rbacSeed = fs.readFileSync(rbacSeedPath, 'utf8');
+
+        statements = rbacSeed
+          .split(';')
+          .map(s => s.trim())
+          .filter(s => s.length > 0);
+
+        for (const statement of statements) {
+          await this.run(statement);
+        }
+
+        console.log('RBAC permissions seeded');
+      }
+    }
   }
 
   async run(sql: string, params: any[] = []): Promise<void> {
