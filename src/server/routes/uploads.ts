@@ -1,29 +1,18 @@
 import express, { Request, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
 import { getDatabase } from '../db/database';
 import { SourceRepository } from '../repositories/SourceRepository';
 import { contentQueue } from '../jobs/queues';
+import { StorageFactory } from '../storage/StorageFactory';
 
 const router = express.Router();
 
-// Ensure upload directory exists
-const uploadDir = process.env.UPLOAD_DIR || './uploads';
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+// Get storage adapter from factory
+const storageAdapter = StorageFactory.getAdapter();
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${file.originalname}`;
-    cb(null, uniqueName);
-  }
-});
+// Configure multer for memory storage (we'll handle file storage via adapter)
+const storage = multer.memoryStorage();
 
 const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   const allowedTypes = [
@@ -58,6 +47,17 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
 
     const { title, source_type, authority_level, jurisdiction, version } = req.body;
 
+    // Generate unique filename
+    const uniqueFilename = `sources/${Date.now()}-${Math.random().toString(36).substring(7)}-${req.file.originalname}`;
+
+    // Upload file using storage adapter
+    const uploadedFile = await storageAdapter.uploadFile(
+      req.file.buffer,
+      uniqueFilename,
+      req.file.mimetype,
+      { originalName: req.file.originalname }
+    );
+
     const db = getDatabase();
     const sourceRepo = new SourceRepository(db);
 
@@ -66,11 +66,12 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
                      req.file.mimetype.includes('word') ? 'docx' :
                      req.file.mimetype.includes('html') ? 'website' : 'manual';
 
-    // Create source record
+    // Create source record with storage path
     const source = await sourceRepo.createSource({
       title: title || req.file.originalname,
       source_type: source_type || fileType,
-      file_path: req.file.path,
+      file_path: uploadedFile.path,
+      url: uploadedFile.url,
       authority_level: authority_level || 'primary',
       jurisdiction,
       version,
@@ -80,7 +81,7 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
     // Queue content extraction
     const job = await contentQueue.add('extract', {
       sourceId: source.id,
-      filePath: req.file.path,
+      filePath: uploadedFile.path,
       fileType: source.source_type
     });
 
