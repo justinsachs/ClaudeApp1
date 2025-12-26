@@ -1,5 +1,4 @@
-import { Database } from 'sqlite3';
-import { promisify } from 'util';
+import { Database } from '../db/database';
 import {
   Deployment,
   PromptTemplate,
@@ -20,15 +19,9 @@ import {
 
 export class PromptRepository {
   private db: Database;
-  private run: any;
-  private get: any;
-  private all: any;
 
   constructor(database: Database) {
     this.db = database;
-    this.run = promisify(this.db.run.bind(this.db));
-    this.get = promisify(this.db.get.bind(this.db));
-    this.all = promisify(this.db.all.bind(this.db));
   }
 
   // ============================================
@@ -37,22 +30,22 @@ export class PromptRepository {
 
   async createDeployment(data: Omit<Deployment, 'id' | 'created_at' | 'updated_at'>): Promise<Deployment> {
     const id = `dep_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-    await this.run(
+    await this.db.run(
       `INSERT INTO deployments (id, name, description, active) VALUES (?, ?, ?, ?)`,
       [id, data.name, data.description, data.active ? 1 : 0]
     );
-    return this.get(`SELECT * FROM deployments WHERE id = ?`, [id]);
+    return this.db.get<Deployment>(`SELECT * FROM deployments WHERE id = ?`, [id]) as Promise<Deployment>;
   }
 
   async getDeployment(id: string): Promise<Deployment | null> {
-    return this.get(`SELECT * FROM deployments WHERE id = ?`, [id]);
+    return this.db.get<Deployment>(`SELECT * FROM deployments WHERE id = ?`, [id]) as Promise<Deployment | null>;
   }
 
   async getAllDeployments(activeOnly: boolean = false): Promise<Deployment[]> {
     const query = activeOnly
       ? `SELECT * FROM deployments WHERE active = 1 ORDER BY name`
       : `SELECT * FROM deployments ORDER BY name`;
-    return this.all(query);
+    return this.db.all(query);
   }
 
   async updateDeployment(id: string, data: Partial<Deployment>): Promise<void> {
@@ -66,7 +59,7 @@ export class PromptRepository {
     if (fields.length > 0) {
       fields.push('updated_at = CURRENT_TIMESTAMP');
       values.push(id);
-      await this.run(
+      await this.db.run(
         `UPDATE deployments SET ${fields.join(', ')} WHERE id = ?`,
         values
       );
@@ -79,7 +72,7 @@ export class PromptRepository {
 
   async createPromptTemplate(data: PromptTemplateCreateRequest): Promise<PromptTemplate> {
     const id = `tpl_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-    await this.run(
+    await this.db.run(
       `INSERT INTO prompt_templates (id, name, prompt_type, template_text, description, version, is_active)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [id, data.name, data.prompt_type, data.template_text, data.description, data.version || '1.0', 1]
@@ -88,18 +81,18 @@ export class PromptRepository {
     // Link variables if provided
     if (data.variables && data.variables.length > 0) {
       for (const variableId of data.variables) {
-        await this.run(
+        await this.db.run(
           `INSERT INTO template_variables (template_id, variable_id, is_required) VALUES (?, ?, ?)`,
           [id, variableId, 0]
         );
       }
     }
 
-    return this.get(`SELECT * FROM prompt_templates WHERE id = ?`, [id]);
+    return this.db.get<PromptTemplate>(`SELECT * FROM prompt_templates WHERE id = ?`, [id]) as Promise<PromptTemplate>;
   }
 
   async getPromptTemplate(id: string): Promise<PromptTemplate | null> {
-    return this.get(`SELECT * FROM prompt_templates WHERE id = ?`, [id]);
+    return this.db.get<PromptTemplate>(`SELECT * FROM prompt_templates WHERE id = ?`, [id]) as Promise<PromptTemplate | null>;
   }
 
   async getPromptTemplateByType(
@@ -109,17 +102,17 @@ export class PromptRepository {
     const query = activeOnly
       ? `SELECT * FROM prompt_templates WHERE prompt_type = ? AND is_active = 1 ORDER BY created_at DESC LIMIT 1`
       : `SELECT * FROM prompt_templates WHERE prompt_type = ? ORDER BY created_at DESC LIMIT 1`;
-    return this.get(query, [promptType]);
+    return this.db.get<PromptTemplate>(query, [promptType]) as Promise<PromptTemplate | null>;
   }
 
   async getAllPromptTemplates(promptType?: PromptType): Promise<PromptTemplate[]> {
     if (promptType) {
-      return this.all(
+      return this.db.all(
         `SELECT * FROM prompt_templates WHERE prompt_type = ? ORDER BY prompt_type, created_at DESC`,
         [promptType]
       );
     }
-    return this.all(`SELECT * FROM prompt_templates ORDER BY prompt_type, created_at DESC`);
+    return this.db.all(`SELECT * FROM prompt_templates ORDER BY prompt_type, created_at DESC`);
   }
 
   async updatePromptTemplate(id: string, data: Partial<PromptTemplate>): Promise<void> {
@@ -135,7 +128,7 @@ export class PromptRepository {
     if (fields.length > 0) {
       fields.push('updated_at = CURRENT_TIMESTAMP');
       values.push(id);
-      await this.run(
+      await this.db.run(
         `UPDATE prompt_templates SET ${fields.join(', ')} WHERE id = ?`,
         values
       );
@@ -148,31 +141,31 @@ export class PromptRepository {
 
   async createPromptVariable(data: Omit<PromptVariable, 'id' | 'created_at'>): Promise<PromptVariable> {
     const id = `var_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-    await this.run(
+    await this.db.run(
       `INSERT INTO prompt_variables (id, variable_name, description, default_value, variable_type, is_required, scope)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [id, data.variable_name, data.description, data.default_value, data.variable_type, data.is_required ? 1 : 0, data.scope]
     );
-    return this.get(`SELECT * FROM prompt_variables WHERE id = ?`, [id]);
+    return this.db.get<PromptVariable>(`SELECT * FROM prompt_variables WHERE id = ?`, [id]) as Promise<PromptVariable>;
   }
 
   async getPromptVariable(id: string): Promise<PromptVariable | null> {
-    return this.get(`SELECT * FROM prompt_variables WHERE id = ?`, [id]);
+    return this.db.get<PromptVariable>(`SELECT * FROM prompt_variables WHERE id = ?`, [id]) as Promise<PromptVariable | null>;
   }
 
   async getPromptVariableByName(name: string): Promise<PromptVariable | null> {
-    return this.get(`SELECT * FROM prompt_variables WHERE variable_name = ?`, [name]);
+    return this.db.get<PromptVariable>(`SELECT * FROM prompt_variables WHERE variable_name = ?`, [name]) as Promise<PromptVariable | null>;
   }
 
   async getAllPromptVariables(scope?: VariableScope): Promise<PromptVariable[]> {
     if (scope) {
-      return this.all(`SELECT * FROM prompt_variables WHERE scope = ? ORDER BY variable_name`, [scope]);
+      return this.db.all(`SELECT * FROM prompt_variables WHERE scope = ? ORDER BY variable_name`, [scope]);
     }
-    return this.all(`SELECT * FROM prompt_variables ORDER BY scope, variable_name`);
+    return this.db.all(`SELECT * FROM prompt_variables ORDER BY scope, variable_name`);
   }
 
   async getTemplateVariables(templateId: string): Promise<PromptVariable[]> {
-    return this.all(
+    return this.db.all(
       `SELECT pv.* FROM prompt_variables pv
        INNER JOIN template_variables tv ON pv.id = tv.variable_id
        WHERE tv.template_id = ?
@@ -187,32 +180,32 @@ export class PromptRepository {
 
   async createDeploymentPrompt(data: DeploymentPromptCreateRequest): Promise<DeploymentPrompt> {
     const id = `deppmt_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-    await this.run(
+    await this.db.run(
       `INSERT INTO deployment_prompts (id, deployment_id, template_id, custom_template_text, notes, is_enabled)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [id, data.deployment_id, data.template_id, data.custom_template_text, data.notes, 1]
     );
-    return this.get(`SELECT * FROM deployment_prompts WHERE id = ?`, [id]);
+    return this.db.get<DeploymentPrompt>(`SELECT * FROM deployment_prompts WHERE id = ?`, [id]) as Promise<DeploymentPrompt>;
   }
 
   async getDeploymentPrompt(deploymentId: string, templateId: string): Promise<DeploymentPrompt | null> {
-    return this.get(
+    return this.db.get<DeploymentPrompt>(
       `SELECT * FROM deployment_prompts WHERE deployment_id = ? AND template_id = ?`,
       [deploymentId, templateId]
-    );
+    ) as Promise<DeploymentPrompt | null>;
   }
 
   async getDeploymentPromptByType(
     deploymentId: string,
     promptType: PromptType
   ): Promise<DeploymentPrompt | null> {
-    return this.get(
+    return this.db.get<DeploymentPrompt>(
       `SELECT dp.* FROM deployment_prompts dp
        INNER JOIN prompt_templates pt ON dp.template_id = pt.id
        WHERE dp.deployment_id = ? AND pt.prompt_type = ? AND dp.is_enabled = 1
        ORDER BY dp.created_at DESC LIMIT 1`,
       [deploymentId, promptType]
-    );
+    ) as Promise<DeploymentPrompt | null>;
   }
 
   async setDeploymentVariable(
@@ -223,21 +216,21 @@ export class PromptRepository {
     const id = `depvar_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
     // Upsert pattern
-    await this.run(
+    await this.db.run(
       `INSERT INTO deployment_variables (id, deployment_id, variable_id, value)
        VALUES (?, ?, ?, ?)
        ON CONFLICT(deployment_id, variable_id) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP`,
       [id, deploymentId, variableId, value, value]
     );
 
-    return this.get(
+    return this.db.get<DeploymentVariable>(
       `SELECT * FROM deployment_variables WHERE deployment_id = ? AND variable_id = ?`,
       [deploymentId, variableId]
-    );
+    ) as Promise<DeploymentVariable>;
   }
 
   async getDeploymentVariables(deploymentId: string): Promise<Record<string, string>> {
-    const rows: DeploymentVariable[] = await this.all(
+    const rows: DeploymentVariable[] = await this.db.all(
       `SELECT dv.*, pv.variable_name
        FROM deployment_variables dv
        INNER JOIN prompt_variables pv ON dv.variable_id = pv.id
@@ -262,42 +255,42 @@ export class PromptRepository {
     customText?: string
   ): Promise<CoursePrompt> {
     const id = `crspmt_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-    await this.run(
+    await this.db.run(
       `INSERT INTO course_prompts (id, course_id, template_id, custom_template_text, is_enabled)
        VALUES (?, ?, ?, ?, ?)`,
       [id, courseId, templateId, customText, 1]
     );
-    return this.get(`SELECT * FROM course_prompts WHERE id = ?`, [id]);
+    return this.db.get<CoursePrompt>(`SELECT * FROM course_prompts WHERE id = ?`, [id]) as Promise<CoursePrompt>;
   }
 
   async getCoursePromptByType(courseId: string, promptType: PromptType): Promise<CoursePrompt | null> {
-    return this.get(
+    return this.db.get<CoursePrompt>(
       `SELECT cp.* FROM course_prompts cp
        INNER JOIN prompt_templates pt ON cp.template_id = pt.id
        WHERE cp.course_id = ? AND pt.prompt_type = ? AND cp.is_enabled = 1
        ORDER BY cp.created_at DESC LIMIT 1`,
       [courseId, promptType]
-    );
+    ) as Promise<CoursePrompt | null>;
   }
 
   async setCourseVariable(courseId: string, variableId: string, value: string): Promise<CourseVariable> {
     const id = `crsvar_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
-    await this.run(
+    await this.db.run(
       `INSERT INTO course_variables (id, course_id, variable_id, value)
        VALUES (?, ?, ?, ?)
        ON CONFLICT(course_id, variable_id) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP`,
       [id, courseId, variableId, value, value]
     );
 
-    return this.get(
+    return this.db.get<CourseVariable>(
       `SELECT * FROM course_variables WHERE course_id = ? AND variable_id = ?`,
       [courseId, variableId]
-    );
+    ) as Promise<CourseVariable>;
   }
 
   async getCourseVariables(courseId: string): Promise<Record<string, string>> {
-    const rows: CourseVariable[] = await this.all(
+    const rows: CourseVariable[] = await this.db.all(
       `SELECT cv.*, pv.variable_name
        FROM course_variables cv
        INNER JOIN prompt_variables pv ON cv.variable_id = pv.id
@@ -319,21 +312,21 @@ export class PromptRepository {
   async setSectionVariable(sectionId: string, variableId: string, value: string): Promise<SectionVariable> {
     const id = `secvar_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
-    await this.run(
+    await this.db.run(
       `INSERT INTO section_variables (id, section_id, variable_id, value)
        VALUES (?, ?, ?, ?)
        ON CONFLICT(section_id, variable_id) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP`,
       [id, sectionId, variableId, value, value]
     );
 
-    return this.get(
+    return this.db.get<SectionVariable>(
       `SELECT * FROM section_variables WHERE section_id = ? AND variable_id = ?`,
       [sectionId, variableId]
-    );
+    ) as Promise<SectionVariable>;
   }
 
   async getSectionVariables(sectionId: string): Promise<Record<string, string>> {
-    const rows: SectionVariable[] = await this.all(
+    const rows: SectionVariable[] = await this.db.all(
       `SELECT sv.*, pv.variable_name
        FROM section_variables sv
        INNER JOIN prompt_variables pv ON sv.variable_id = pv.id
@@ -354,7 +347,7 @@ export class PromptRepository {
 
   async logPromptExecution(data: Omit<PromptExecution, 'id' | 'executed_at'>): Promise<PromptExecution> {
     const id = `exec_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-    await this.run(
+    await this.db.run(
       `INSERT INTO prompt_executions
        (id, prompt_type, deployment_id, course_id, section_id, learner_id, resolved_prompt, ai_service, execution_context)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -370,7 +363,7 @@ export class PromptRepository {
         data.execution_context
       ]
     );
-    return this.get(`SELECT * FROM prompt_executions WHERE id = ?`, [id]);
+    return this.db.get<PromptExecution>(`SELECT * FROM prompt_executions WHERE id = ?`, [id]) as Promise<PromptExecution>;
   }
 
   async getPromptExecutions(filters: {
@@ -408,7 +401,7 @@ export class PromptRepository {
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const limit = filters.limit || 100;
 
-    return this.all(
+    return this.db.all(
       `SELECT * FROM prompt_executions ${whereClause} ORDER BY executed_at DESC LIMIT ?`,
       [...values, limit]
     );

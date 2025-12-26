@@ -27,8 +27,8 @@ export default function SectionLearning() {
 
   const [phase, setPhase] = useState<LearningPhase>('welcome');
   const [section, setSection] = useState<SectionData | null>(null);
-  const [welcomeVideo, setWelcomeVideo] = useState<string | null>(null);
-  const [wrapupVideo, setWrapupVideo] = useState<string | null>(null);
+  // const [welcomeVideo, setWelcomeVideo] = useState<string | null>(null);
+  // const [wrapupVideo, setWrapupVideo] = useState<string | null>(null);
   const [instructionTab, setInstructionTab] = useState<'video' | 'podcast' | 'summary'>('video');
   const [assessmentAnswers, setAssessmentAnswers] = useState<Record<string, string>>({});
   const [showFeedback, setShowFeedback] = useState(false);
@@ -308,7 +308,7 @@ You'll use these valuation methods to:
                         url={mockInstruction.videoUrl}
                         width="100%"
                         height="100%"
-                        controls
+                        controls={true}
                       />
                     </div>
                     <p className="text-sm text-gray-500">

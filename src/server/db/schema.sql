@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS section_objectives (
 CREATE TABLE IF NOT EXISTS sources (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
-    source_type TEXT CHECK(source_type IN ('pdf', 'manual', 'sop', 'website', 'regulation', 'standard', 'template', 'transcript')),
+    source_type TEXT CHECK(source_type IN ('pdf', 'docx', 'manual', 'sop', 'website', 'regulation', 'standard', 'template', 'transcript')),
     file_path TEXT,
     url TEXT,
     version TEXT,

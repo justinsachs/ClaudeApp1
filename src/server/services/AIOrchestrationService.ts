@@ -4,7 +4,7 @@
  * Resolves prompts with context before making AI service calls
  */
 
-import { Database } from 'sqlite3';
+import { Database } from '../db/database';
 import { PromptEngine } from './PromptEngine';
 import { AIServiceFactory, NotebookLMService, SoraService, HeyGenService } from './AIServices';
 import { ChatbotServiceFactory, ChatbotService, ChatMessage } from './ChatbotService';

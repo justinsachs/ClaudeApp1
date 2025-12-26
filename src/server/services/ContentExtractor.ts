@@ -1,4 +1,4 @@
-import pdfParse from 'pdf-parse';
+import * as pdfParse from 'pdf-parse';
 import mammoth from 'mammoth';
 import fs from 'fs/promises';
 
@@ -6,7 +6,7 @@ export class ContentExtractor {
   async extractFromPDF(filePath: string): Promise<string> {
     try {
       const buffer = await fs.readFile(filePath);
-      const data = await pdfParse(buffer);
+      const data = await (pdfParse as any)(buffer);
       return data.text;
     } catch (error: any) {
       throw new Error(`Failed to extract PDF content: ${error.message}`);

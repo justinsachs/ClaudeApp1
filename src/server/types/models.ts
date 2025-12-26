@@ -74,7 +74,7 @@ export interface SectionObjective {
 export interface Source {
   id: string;
   title: string;
-  source_type: 'pdf' | 'manual' | 'sop' | 'website' | 'regulation' | 'standard' | 'template' | 'transcript';
+  source_type: 'pdf' | 'docx' | 'manual' | 'sop' | 'website' | 'regulation' | 'standard' | 'template' | 'transcript';
   file_path?: string;
   url?: string;
   version?: string;

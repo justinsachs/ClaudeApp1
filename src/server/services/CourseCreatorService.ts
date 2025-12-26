@@ -4,25 +4,18 @@
  * Maintains structured 6-step section flow while allowing drag-and-drop style editing
  */
 
-import { Database } from 'sqlite3';
-import { promisify } from 'util';
+import { Database } from '../db/database';
 import { CourseDraft, CourseDraftData, SectionBuilderRequest } from '../types/rbac-models';
 import { CourseRepository } from '../repositories/CourseRepository';
 import { SourceRepository } from '../repositories/SourceRepository';
 
 export class CourseCreatorService {
   private db: Database;
-  private run: any;
-  private get: any;
-  private all: any;
   private courseRepo: CourseRepository;
   private sourceRepo: SourceRepository;
 
   constructor(database: Database) {
     this.db = database;
-    this.run = promisify(this.db.run.bind(this.db));
-    this.get = promisify(this.db.get.bind(this.db));
-    this.all = promisify(this.db.all.bind(this.db));
     this.courseRepo = new CourseRepository(database);
     this.sourceRepo = new SourceRepository(database);
   }
@@ -58,30 +51,34 @@ export class CourseCreatorService {
       sections: []
     };
 
-    await this.run(
+    await this.db.run(
       `INSERT INTO course_drafts (id, creator_id, deployment_id, draft_data, status)
        VALUES (?, ?, ?, ?, ?)`,
       [draftId, creatorId, deploymentId, JSON.stringify(draftData), 'building']
     );
 
-    return this.get(`SELECT * FROM course_drafts WHERE id = ?`, [draftId]);
+    const draft = await this.db.get<CourseDraft>(`SELECT * FROM course_drafts WHERE id = ?`, [draftId]);
+    if (!draft) {
+      throw new Error(`Failed to create draft with id ${draftId}`);
+    }
+    return draft;
   }
 
   /**
    * Get draft by ID
    */
   async getDraft(draftId: string): Promise<CourseDraft | null> {
-    return this.get(`SELECT * FROM course_drafts WHERE id = ?`, [draftId]);
+    return this.db.get(`SELECT * FROM course_drafts WHERE id = ?`, [draftId]) as Promise<CourseDraft | null>;
   }
 
   /**
    * Get all drafts for a creator
    */
   async getCreatorDrafts(creatorId: string): Promise<CourseDraft[]> {
-    return this.all(
+    return this.db.all(
       `SELECT * FROM course_drafts WHERE creator_id = ? ORDER BY updated_at DESC`,
       [creatorId]
-    );
+    ) as Promise<CourseDraft[]>;
   }
 
   /**
@@ -115,7 +112,7 @@ export class CourseCreatorService {
       draftData.course.estimated_duration = updates.estimated_duration;
     }
 
-    await this.run(
+    await this.db.run(
       `UPDATE course_drafts SET draft_data = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
       [JSON.stringify(draftData), draftId]
     );
@@ -148,7 +145,7 @@ export class CourseCreatorService {
       order_index: draftData.outcomes.length
     });
 
-    await this.run(
+    await this.db.run(
       `UPDATE course_drafts SET draft_data = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
       [JSON.stringify(draftData), draftId]
     );
@@ -172,7 +169,7 @@ export class CourseCreatorService {
 
     draftData.outcomes = reordered;
 
-    await this.run(
+    await this.db.run(
       `UPDATE course_drafts SET draft_data = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
       [JSON.stringify(draftData), draftId]
     );
@@ -196,7 +193,7 @@ export class CourseCreatorService {
       outcome.order_index = index;
     });
 
-    await this.run(
+    await this.db.run(
       `UPDATE course_drafts SET draft_data = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
       [JSON.stringify(draftData), draftId]
     );
@@ -247,7 +244,7 @@ export class CourseCreatorService {
 
     draftData.sections.push(newSection);
 
-    await this.run(
+    await this.db.run(
       `UPDATE course_drafts SET draft_data = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
       [JSON.stringify(draftData), draftId]
     );
@@ -299,7 +296,7 @@ export class CourseCreatorService {
       section.source_ids = updates.source_ids;
     }
 
-    await this.run(
+    await this.db.run(
       `UPDATE course_drafts SET draft_data = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
       [JSON.stringify(draftData), draftId]
     );
@@ -329,7 +326,7 @@ export class CourseCreatorService {
 
     draftData.sections = reordered;
 
-    await this.run(
+    await this.db.run(
       `UPDATE course_drafts SET draft_data = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
       [JSON.stringify(draftData), draftId]
     );
@@ -353,7 +350,7 @@ export class CourseCreatorService {
       section.section.order_index = index;
     });
 
-    await this.run(
+    await this.db.run(
       `UPDATE course_drafts SET draft_data = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
       [JSON.stringify(draftData), draftId]
     );
@@ -369,7 +366,7 @@ export class CourseCreatorService {
    * Mark draft as ready for review
    */
   async markForReview(draftId: string): Promise<CourseDraft> {
-    await this.run(
+    await this.db.run(
       `UPDATE course_drafts SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
       ['review', draftId]
     );
@@ -415,25 +412,28 @@ export class CourseCreatorService {
       }))
     };
 
-    const course = await this.courseRepo.createCoursePackage(coursePackage);
+    const courseId = await this.courseRepo.createCoursePackage(coursePackage);
 
     // Update draft to link to published course
-    await this.run(
+    await this.db.run(
       `UPDATE course_drafts SET course_id = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-      [course.id, 'published', draftId]
+      [courseId, 'published', draftId]
     );
 
     // Update creator's course count
-    await this.run(
+    await this.db.run(
       `UPDATE creator_profiles SET courses_created = courses_created + 1 WHERE user_id = ?`,
       [creatorId]
     );
 
     const updatedDraft = await this.getDraft(draftId);
+    if (!updatedDraft) {
+      throw new Error(`Failed to retrieve updated draft with id ${draftId}`);
+    }
 
     return {
-      courseId: course.id,
-      draft: updatedDraft as CourseDraft
+      courseId: courseId,
+      draft: updatedDraft
     };
   }
 
@@ -449,7 +449,7 @@ export class CourseCreatorService {
     const draftData: CourseDraftData = JSON.parse(draft.draft_data);
     draftData.course.title = `${draftData.course.title} (Copy)`;
 
-    await this.run(
+    await this.db.run(
       `INSERT INTO course_drafts (id, creator_id, deployment_id, draft_data, status)
        VALUES (?, ?, ?, ?, ?)`,
       [newDraftId, creatorId, draft.deployment_id, JSON.stringify(draftData), 'building']
@@ -473,7 +473,7 @@ export class CourseCreatorService {
       throw new Error('Cannot delete published draft. Unpublish the course first.');
     }
 
-    await this.run(`DELETE FROM course_drafts WHERE id = ?`, [draftId]);
+    await this.db.run(`DELETE FROM course_drafts WHERE id = ?`, [draftId]);
   }
 
   // ============================================

@@ -1,4 +1,4 @@
-import { Database } from 'sqlite3';
+import { Database } from '../db/database';
 import { PromptRepository } from '../repositories/PromptRepository';
 import { LearnerRepository } from '../repositories/LearnerRepository';
 import {
@@ -230,7 +230,7 @@ export class PromptEngine {
 
       // Check for default value syntax: {{variable|default}}
       if (trimmed.includes('|')) {
-        const [varName, defaultValue] = trimmed.split('|').map(s => s.trim());
+        const [varName, defaultValue] = trimmed.split('|').map((s: string) => s.trim());
         return variables[varName] !== undefined
           ? String(variables[varName])
           : defaultValue;

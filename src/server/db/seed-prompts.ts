@@ -3,7 +3,7 @@
  * Based on Business Foundations course example with MedViro deployment
  */
 
-import { Database } from 'sqlite3';
+import { Database } from './database';
 import { PromptRepository } from '../repositories/PromptRepository';
 
 export async function seedPrompts(db: Database) {

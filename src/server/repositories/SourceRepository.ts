@@ -37,6 +37,11 @@ export class SourceRepository {
     return this.db.get<Source>('SELECT * FROM sources WHERE id = ?', [id]);
   }
 
+  // Alias for getSourceById (used by CourseCreatorService)
+  async getSource(id: string): Promise<Source | undefined> {
+    return this.getSourceById(id);
+  }
+
   async getAllSources(): Promise<Source[]> {
     return this.db.all<Source>('SELECT * FROM sources ORDER BY uploaded_at DESC');
   }

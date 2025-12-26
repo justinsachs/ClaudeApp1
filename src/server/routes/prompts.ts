@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { Database } from 'sqlite3';
+import { Database } from '../db/database';
 import { PromptRepository } from '../repositories/PromptRepository';
 import { PromptEngine } from '../services/PromptEngine';
 import {

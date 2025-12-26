@@ -88,7 +88,7 @@ async function start() {
     console.log('Database initialized successfully');
 
     // Register prompt routes (requires database instance)
-    const promptRoutes = createPromptRoutes(db.getDb());
+    const promptRoutes = createPromptRoutes(db);
     app.use('/api/prompts', promptRoutes);
     console.log('Prompt management routes registered');
 

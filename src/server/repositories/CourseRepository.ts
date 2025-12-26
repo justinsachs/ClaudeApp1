@@ -37,7 +37,11 @@ export class CourseRepository {
       ]
     );
 
-    return this.getCourseById(id) as Promise<Course>;
+    const created = await this.getCourseById(id);
+    if (!created) {
+      throw new Error(`Failed to create course with id ${id}`);
+    }
+    return created;
   }
 
   async getCourseById(id: string): Promise<Course | undefined> {

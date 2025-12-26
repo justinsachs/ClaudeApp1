@@ -78,7 +78,7 @@ export class OpenAIChatbotService implements ChatbotService {
         throw new Error(`OpenAI API error: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data: any = await response.json();
       const assistantMessage = data.choices[0].message.content;
 
       // Check if calibration is complete (AI indicates end of interview)
@@ -136,7 +136,7 @@ Return as JSON:
         })
       });
 
-      const data = await response.json();
+      const data: any = await response.json();
       return JSON.parse(data.choices[0].message.content);
     } catch (error) {
       console.error('Error extracting calibration results:', error);
@@ -236,7 +236,7 @@ export class AnthropicChatbotService implements ChatbotService {
         throw new Error(`Anthropic API error: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data: any = await response.json();
       const assistantMessage = data.content[0].text;
 
       const isComplete = this.checkIfCalibrationComplete(assistantMessage, conversationHistory);
@@ -295,7 +295,7 @@ Return as JSON:
         })
       });
 
-      const data = await response.json();
+      const data: any = await response.json();
       const text = data.content[0].text;
 
       // Extract JSON from response (Claude might add explanation)
