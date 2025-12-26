@@ -33,11 +33,11 @@ class Database {
   }
 
   private async runMigrations(): Promise<void> {
+    // Run main schema
     const schemaPath = path.join(__dirname, 'schema.sql');
     const schema = fs.readFileSync(schemaPath, 'utf8');
 
-    // Split by semicolon and execute each statement
-    const statements = schema
+    let statements = schema
       .split(';')
       .map(s => s.trim())
       .filter(s => s.length > 0);
@@ -46,7 +46,24 @@ class Database {
       await this.run(statement);
     }
 
-    console.log('Database migrations completed');
+    console.log('Main schema migrations completed');
+
+    // Run prompt schema
+    const promptSchemaPath = path.join(__dirname, 'prompt_schema.sql');
+    if (fs.existsSync(promptSchemaPath)) {
+      const promptSchema = fs.readFileSync(promptSchemaPath, 'utf8');
+
+      statements = promptSchema
+        .split(';')
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+
+      for (const statement of statements) {
+        await this.run(statement);
+      }
+
+      console.log('Prompt schema migrations completed');
+    }
   }
 
   async run(sql: string, params: any[] = []): Promise<void> {

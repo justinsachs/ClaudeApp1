@@ -27,7 +27,21 @@ A comprehensive AI-powered course creation and delivery platform implementing th
 - **NotebookLM**: Grounded instruction from approved sources
 - **Sora**: AI-generated section introduction videos
 - **HeyGen**: Personalized wrap-up and reinforcement videos
+- **Prompt Architecture**: Tenant-specific AI prompt customization system
 - **Mock Services**: Development-ready mock implementations (replace with real APIs)
+
+### 🎯 Prompt Architecture System (NEW!)
+
+The platform now includes a comprehensive **tenant-specific prompt management system**:
+
+- **7 Prompt Types**: System orchestrator, Sora intro, Calibration, NotebookLM (5 variants), Verification, Remediation, HeyGen wrap-up
+- **Hierarchical Customization**: Global → Deployment → Course → Section → Learner variable resolution
+- **Template Engine**: Variable substitution with `{{variable}}` syntax, conditionals, default values
+- **Multi-Tenant Support**: Each business (e.g., MedViro vs MedVendor) can have unique prompts
+- **Variable Scopes**: Deployment, course, section, and learner-specific variables
+- **Audit Trail**: Complete logging of all prompt resolutions
+
+See [PROMPT_ARCHITECTURE_GUIDE.md](./PROMPT_ARCHITECTURE_GUIDE.md) for complete documentation.
 
 ## 📋 Prerequisites
 

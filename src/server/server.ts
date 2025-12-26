@@ -2,7 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
-import { initializeDatabase } from './db/database';
+import { initializeDatabase, getDatabase } from './db/database';
 
 // Load environment variables
 dotenv.config();
@@ -15,6 +15,7 @@ import sectionRoutes from './routes/sections';
 import sourceRoutes from './routes/sources';
 import assessmentRoutes from './routes/assessments';
 import uploadRoutes from './routes/uploads';
+import { createPromptRoutes } from './routes/prompts';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -83,8 +84,13 @@ app.use((req: Request, res: Response) => {
 async function start() {
   try {
     console.log('Initializing database...');
-    await initializeDatabase();
+    const db = await initializeDatabase();
     console.log('Database initialized successfully');
+
+    // Register prompt routes (requires database instance)
+    const promptRoutes = createPromptRoutes(db.getDb());
+    app.use('/api/prompts', promptRoutes);
+    console.log('Prompt management routes registered');
 
     // Start background job processors
     console.log('Starting background job processors...');
