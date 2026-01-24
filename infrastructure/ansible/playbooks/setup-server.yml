@@ -1,0 +1,214 @@
+---
+- name: Initial Server Setup
+  hosts: app_servers
+  become: yes
+  vars:
+    app_user: ubuntu
+
+  tasks:
+    - name: Update and upgrade apt packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Install basic packages
+      apt:
+        name:
+          - ufw
+          - fail2ban
+          - unattended-upgrades
+          - htop
+          - vim
+          - postgresql
+          - postgresql-contrib
+          - python3-psycopg2
+        state: present
+
+    - name: Configure UFW defaults
+      ufw:
+        direction: "{{ item.direction }}"
+        policy: "{{ item.policy }}"
+      loop:
+        - { direction: "incoming", policy: "deny" }
+        - { direction: "outgoing", policy: "allow" }
+
+    - name: Configure UFW rules
+      ufw:
+        rule: "{{ item.rule }}"
+        port: "{{ item.port }}"
+        proto: "{{ item.proto }}"
+      loop:
+        - { rule: "allow", port: "22", proto: "tcp" }
+        - { rule: "allow", port: "80", proto: "tcp" }
+        - { rule: "allow", port: "443", proto: "tcp" }
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+
+    - name: Start and enable fail2ban
+      systemd:
+        name: fail2ban
+        state: started
+        enabled: yes
+
+    - name: Configure automatic security updates
+      copy:
+        content: |
+          APT::Periodic::Update-Package-Lists "1";
+          APT::Periodic::Unattended-Upgrade "1";
+          APT::Periodic::AutocleanInterval "7";
+        dest: /etc/apt/apt.conf.d/20auto-upgrades
+        mode: "0644"
+
+    - name: Set timezone to UTC
+      timezone:
+        name: UTC
+
+    - name: Check if swap file exists
+      stat:
+        path: /swapfile
+      register: swap_file
+
+    - name: Check if swap is already active
+      command: swapon --show
+      register: swap_status
+      changed_when: false
+      failed_when: false
+
+    - name: Create swap file (if not exists)
+      command: fallocate -l 2G /swapfile
+      args:
+        creates: /swapfile
+      when: not swap_file.stat.exists
+
+    - name: Set swap file permissions
+      file:
+        path: /swapfile
+        mode: "0600"
+      when: not swap_file.stat.exists
+
+    - name: Format swap file
+      command: mkswap /swapfile
+      when: "not swap_file.stat.exists and '/swapfile' not in swap_status.stdout"
+
+    - name: Enable swap file
+      command: swapon /swapfile
+      when: "'/swapfile' not in swap_status.stdout"
+      failed_when: false
+
+    - name: Add swap to fstab
+      lineinfile:
+        path: /etc/fstab
+        line: "/swapfile none swap sw 0 0"
+        state: present
+
+    - name: Start and enable PostgreSQL
+      systemd:
+        name: postgresql
+        state: started
+        enabled: yes
+
+    - name: Create PostgreSQL database
+      postgresql_db:
+        name: "{{ db_name | default('ai_course_platform') }}"
+        state: present
+      become_user: postgres
+
+    - name: Create PostgreSQL user
+      postgresql_user:
+        name: "{{ db_user | default('app_user') }}"
+        password: "{{ db_password | default('changeme123') }}"
+        state: present
+      become_user: postgres
+
+    - name: Grant all privileges on database to user
+      postgresql_privs:
+        database: "{{ db_name | default('ai_course_platform') }}"
+        state: present
+        privs: ALL
+        type: database
+        role: "{{ db_user | default('app_user') }}"
+      become_user: postgres
+
+    - name: Grant all privileges on schema to user
+      postgresql_privs:
+        database: "{{ db_name | default('ai_course_platform') }}"
+        state: present
+        privs: ALL
+        type: schema
+        objs: public
+        role: "{{ db_user | default('app_user') }}"
+      become_user: postgres
+
+    - name: Create .ssh directory for app user
+      file:
+        path: /home/{{ app_user }}/.ssh
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0700"
+
+    - name: Check if GitHub deploy key exists
+      stat:
+        path: /home/{{ app_user }}/.ssh/github_deploy_key
+      register: deploy_key_stat
+
+    - name: Generate GitHub deploy key on server
+      openssh_keypair:
+        path: /home/{{ app_user }}/.ssh/github_deploy_key
+        type: ed25519
+        comment: "deploy@ai-course-platform"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0600"
+      when: not deploy_key_stat.stat.exists
+      register: generated_key
+
+    - name: Read the generated public key
+      slurp:
+        src: /home/{{ app_user }}/.ssh/github_deploy_key.pub
+      register: github_public_key
+      when: generated_key.changed
+
+    - name: Display the public key to add to GitHub
+      debug:
+        msg: |
+          ⚠️  IMPORTANT: Add this public key to GitHub Deploy Keys ⚠️
+
+          Repository: {{ git_repo_url | default('your-repo-url') }}
+          Settings → Deploy keys → Add deploy key
+
+          Public Key:
+          {{ github_public_key.content | b64decode }}
+
+      when: generated_key.changed
+
+    - name: Pause to allow adding key to GitHub
+      pause:
+        prompt: |
+
+          Please add the above public key to GitHub Deploy Keys, then press ENTER to continue.
+          (Settings → Deploy keys → Add deploy key)
+      when: generated_key.changed
+
+    - name: Add GitHub to known_hosts
+      known_hosts:
+        name: github.com
+        key: "{{ lookup('pipe', 'ssh-keyscan -H github.com') }}"
+        state: present
+        path: /home/{{ app_user }}/.ssh/known_hosts
+      become_user: "{{ app_user }}"
+
+    - name: Configure SSH to use deploy key for GitHub
+      blockinfile:
+        path: /home/{{ app_user }}/.ssh/config
+        create: yes
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0600"
+        block: |
+          Host github.com
+            HostName github.com
+            User git
+            IdentityFile ~/.ssh/github_deploy_key

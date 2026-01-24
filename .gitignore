@@ -9,3 +9,6 @@ uploads/
 client/node_modules/
 client/dist/
 client/build/
+infrastructure/terraform/.terraform.lock.hcl
+infrastructure/terraform/.terraform/
+

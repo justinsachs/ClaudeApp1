@@ -1,0 +1,36 @@
+all:
+  children:
+    app_servers:
+      hosts:
+        staging-app:
+          ansible_host: "{{ lookup('env', 'APP_SERVER_IP') }}"
+          ansible_user: ubuntu
+          ansible_ssh_private_key_file: ~/.ssh/id_rsa_js
+          ansible_python_interpreter: /usr/bin/python3
+
+          # Application variables
+          app_name: ai-course-platform
+          app_dir: /var/www/ai-course-platform
+          git_repo_url: "{{ lookup('env', 'GIT_REPO_URL') }}"
+          git_branch: main
+          domain_name: "{{ lookup('env', 'DOMAIN_NAME') | default('staging.example.com', true) }}"
+
+          # AWS/Storage variables
+          aws_region: us-east-2
+          storage_type: s3
+          s3_bucket_name: "{{ lookup('env', 'S3_BUCKET_NAME') }}"
+          s3_access_key_id: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+          s3_secret_access_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+          s3_public_url: "{{ lookup('env', 'S3_PUBLIC_URL') }}"
+
+          # Redis variables
+          redis_host: "{{ lookup('env', 'REDIS_HOST') }}"
+          redis_port: 6379
+
+          # API Keys
+          notebooklm_api_key: "{{ lookup('env', 'NOTEBOOKLM_API_KEY') }}"
+          sora_api_key: "{{ lookup('env', 'SORA_API_KEY') }}"
+          heygen_api_key: "{{ lookup('env', 'HEYGEN_API_KEY') }}"
+          openai_api_key: "{{ lookup('env', 'OPENAI_API_KEY') }}"
+          anthropic_api_key: "{{ lookup('env', 'ANTHROPIC_API_KEY') }}"
+          chatbot_provider: openai
