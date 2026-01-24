@@ -7,8 +7,7 @@ import {
   BookOpenIcon,
   MicrophoneIcon,
   VideoCameraIcon,
-  ChevronRightIcon,
-  ChevronLeftIcon
+  ChevronRightIcon
 } from '@heroicons/react/24/outline';
 
 interface SectionData {
@@ -308,7 +307,8 @@ You'll use these valuation methods to:
                         url={mockInstruction.videoUrl}
                         width="100%"
                         height="100%"
-                        controls={true}
+                        controls
+                        {...({} as any)}
                       />
                     </div>
                     <p className="text-sm text-gray-500">

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { DocumentArrowUpIcon, DocumentTextIcon, CheckCircleIcon, XCircleIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { DocumentArrowUpIcon, DocumentTextIcon, CheckCircleIcon, ClockIcon } from '@heroicons/react/24/outline';
 
 interface Source {
   id: string;
@@ -76,7 +76,7 @@ export default function SourceManager() {
     multiple: true
   });
 
-  const getFileIcon = (type: string) => {
+  const getFileIcon = () => {
     return <DocumentTextIcon className="h-12 w-12 text-primary-500" />;
   };
 
@@ -193,7 +193,7 @@ export default function SourceManager() {
                 >
                   <div className="flex items-start space-x-4">
                     <div className="flex-shrink-0">
-                      {getFileIcon(source.source_type)}
+                      {getFileIcon()}
                     </div>
 
                     <div className="flex-1 min-w-0">

@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import { enrollmentAPI, sectionAPI } from '../api/client'
+import { enrollmentAPI } from '../api/client'
 
 export default function LearnerJourney() {
   const { enrollmentId } = useParams<{ enrollmentId: string }>()
   const [enrollment, setEnrollment] = useState<any>(null)
   const [progress, setProgress] = useState<any[]>([])
-  const [currentSection, setCurrentSection] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -25,14 +24,6 @@ export default function LearnerJourney() {
 
       setEnrollment(enrollmentRes.data.enrollment)
       setProgress(progressRes.data.progress)
-
-      // Find first incomplete section
-      const nextSection = progressRes.data.progress.find(
-        (p: any) => p.status === 'not_started' || p.status === 'in_progress'
-      )
-      if (nextSection) {
-        setCurrentSection(nextSection)
-      }
     } catch (error) {
       console.error('Failed to load enrollment data:', error)
     } finally {

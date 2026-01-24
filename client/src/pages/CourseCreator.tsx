@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { courseAPI, sourceAPI } from '../api/client'
+import { courseAPI } from '../api/client'
 import { useNavigate } from 'react-router-dom'
 
 export default function CourseCreator() {
@@ -58,7 +58,7 @@ export default function CourseCreator() {
         }))
       }
 
-      const response = await courseAPI.createPackage(coursePackage)
+      await courseAPI.createPackage(coursePackage)
       alert('Course created successfully!')
       navigate('/courses')
     } catch (error: any) {
