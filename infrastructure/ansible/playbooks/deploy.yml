@@ -111,6 +111,11 @@
         group: "{{ app_user }}"
         mode: '0600'
 
+    - name: Remove node_modules to force fresh install
+      file:
+        path: "{{ app_dir }}/node_modules"
+        state: absent
+
     - name: Install server dependencies
       npm:
         path: "{{ app_dir }}"
@@ -136,9 +141,12 @@
       become_user: "{{ app_user }}"
 
     - name: Run database migrations
-      command: npm run db:migrate
+      shell: |
+        export $(cat {{ app_dir }}/.env | grep -v '^#' | xargs)
+        npm run db:migrate
       args:
         chdir: "{{ app_dir }}"
+        executable: /bin/bash
       become_user: "{{ app_user }}"
       environment:
         NODE_ENV: production

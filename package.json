@@ -13,6 +13,7 @@
     "start": "node dist/server.js",
     "db:generate": "drizzle-kit generate:pg",
     "db:migrate": "tsx src/server/db/drizzle/migrate.ts",
+    "db:migrate:prod": "node dist/db/drizzle/migrate.js",
     "db:push": "drizzle-kit push:pg",
     "db:studio": "drizzle-kit studio",
     "test": "jest"
@@ -41,6 +42,7 @@
     "postgres": "^3.4.7",
     "redis": "^5.10.0",
     "sqlite3": "^5.1.6",
+    "tsx": "^4.19.2",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
