@@ -1,0 +1,115 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-2
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install server dependencies
+        run: npm ci
+
+      - name: Install client dependencies
+        run: cd client && npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build server
+        run: npm run build:server
+
+      - name: Build client
+        run: npm run build:client
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        # TODO: Switch to OIDC for better security
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get Terraform outputs
+        id: terraform
+        run: |
+          cd infrastructure/terraform
+          terraform init
+          echo "app_ip=$(terraform output -raw app_server_public_ip)" >> $GITHUB_OUTPUT
+          echo "s3_bucket=$(terraform output -raw s3_bucket_name)" >> $GITHUB_OUTPUT
+          # Redis is installed locally on EC2, not ElastiCache
+          echo "redis_host=localhost" >> $GITHUB_OUTPUT
+
+      - name: Setup Python for Ansible
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible boto3 botocore
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ steps.terraform.outputs.app_ip }} >> ~/.ssh/known_hosts
+
+      - name: Deploy with Ansible
+        env:
+          APP_SERVER_IP: ${{ steps.terraform.outputs.app_ip }}
+          REDIS_HOST: ${{ steps.terraform.outputs.redis_host }}
+          S3_BUCKET_NAME: ${{ steps.terraform.outputs.s3_bucket }}
+          S3_PUBLIC_URL: https://${{ steps.terraform.outputs.s3_bucket }}.s3.amazonaws.com
+          DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+          NOTEBOOKLM_API_KEY: ${{ secrets.NOTEBOOKLM_API_KEY }}
+          SORA_API_KEY: ${{ secrets.SORA_API_KEY }}
+          HEYGEN_API_KEY: ${{ secrets.HEYGEN_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          cd infrastructure/ansible
+          ansible-playbook playbooks/deploy.yml
+
+      - name: Health check
+        run: |
+          echo "Waiting for application to start..."
+          sleep 10
+          curl -f http://${{ steps.terraform.outputs.app_ip }}/api/health || exit 1
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "Deployment to staging successful!"
+          echo "App URL: http://${{ steps.terraform.outputs.app_ip }}"
+
+      - name: Notify deployment failure
+        if: failure()
+        run: echo "Deployment to staging failed!"
