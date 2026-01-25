@@ -2,7 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
-import { initializeDatabase, getDatabase } from './db/database';
+import { getDrizzleDb } from './db/drizzle/connection';
 
 // Load environment variables
 dotenv.config();
@@ -83,9 +83,9 @@ app.use((req: Request, res: Response) => {
 // Initialize database and start server
 async function start() {
   try {
-    console.log('Initializing database...');
-    const db = await initializeDatabase();
-    console.log('Database initialized successfully');
+    console.log('Connecting to database...');
+    const db = getDrizzleDb();
+    console.log('Database connected successfully');
 
     // Register prompt routes (requires database instance)
     const promptRoutes = createPromptRoutes(db);
