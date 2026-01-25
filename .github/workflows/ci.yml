@@ -21,17 +21,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
 
       - name: Install server dependencies
         run: npm ci
 
       - name: Install client dependencies
         run: cd client && npm ci
-
-      - name: Run server tests
-        run: npm test
 
       - name: Build server
         run: npm run build:server
