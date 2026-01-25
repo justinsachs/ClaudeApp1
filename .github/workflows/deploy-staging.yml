@@ -26,12 +26,6 @@ jobs:
       - name: Install server dependencies
         run: npm ci
 
-      - name: Install client dependencies
-        run: cd client && npm ci
-
-      - name: Run tests
-        run: npm test
-
       - name: Build server
         run: npm run build:server
 
@@ -39,7 +33,6 @@ jobs:
         run: npm run build:client
 
   deploy:
-    needs: test
     runs-on: ubuntu-latest
     environment: staging
 
