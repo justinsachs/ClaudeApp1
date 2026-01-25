@@ -12,27 +12,10 @@ env:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Install server dependencies
-        run: npm ci
-
-      - name: Build server
-        run: npm run build:server
-
-      - name: Build client
-        run: npm run build:client
+    uses: ./.github/workflows/ci.yml
 
   deploy:
+    needs: test
     runs-on: ubuntu-latest
     environment: staging
 
@@ -58,8 +41,12 @@ jobs:
         run: |
           cd infrastructure/terraform
           terraform init
-          echo "app_ip=$(terraform output -raw app_server_public_ip)" >> $GITHUB_OUTPUT
-          echo "s3_bucket=$(terraform output -raw s3_bucket_name)" >> $GITHUB_OUTPUT
+          APP_IP=$(terraform output -raw app_server_public_ip)
+          S3_BUCKET=$(terraform output -raw s3_bucket_name)
+          echo "Retrieved app_ip: $APP_IP"
+          echo "Retrieved s3_bucket: $S3_BUCKET"
+          echo "app_ip=$APP_IP" >> $GITHUB_OUTPUT
+          echo "s3_bucket=$S3_BUCKET" >> $GITHUB_OUTPUT
           # Redis is installed locally on EC2, not ElastiCache
           echo "redis_host=localhost" >> $GITHUB_OUTPUT
 
@@ -75,10 +62,12 @@ jobs:
 
       - name: Setup SSH key
         run: |
+          echo "Setting up SSH for IP: ${{ steps.terraform.outputs.app_ip }}"
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ steps.terraform.outputs.app_ip }} >> ~/.ssh/known_hosts
+          echo "Scanning SSH host keys..."
+          ssh-keyscan -H ${{ steps.terraform.outputs.app_ip }} >> ~/.ssh/known_hosts || echo "Warning: ssh-keyscan failed, continuing anyway"
 
       - name: Deploy with Ansible
         env:
@@ -94,7 +83,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           cd infrastructure/ansible
-          ansible-playbook playbooks/deploy.yml
+          ansible-playbook -i inventory/staging.yml playbooks/deploy.yml
 
       - name: Health check
         run: |
