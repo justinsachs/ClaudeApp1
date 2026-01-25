@@ -150,6 +150,7 @@
       become_user: "{{ app_user }}"
       environment:
         NODE_ENV: production
+        MIGRATIONS_FOLDER: "{{ app_dir }}/drizzle"
 
     - name: Stop PM2 app if running
       command: pm2 delete {{ pm2_app_name }}

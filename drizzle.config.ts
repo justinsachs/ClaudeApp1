@@ -6,8 +6,8 @@ dotenv.config();
 export default {
   schema: './src/server/db/drizzle/schema.ts',
   out: './drizzle',
-  driver: 'pg', // 'pg' for PostgreSQL, 'better-sqlite' for SQLite
+  dialect: 'postgresql',
   dbCredentials: {
-    connectionString: process.env.DATABASE_URL || 'postgresql://localhost:5432/ai_course_platform',
+    url: process.env.DATABASE_URL || 'postgresql://localhost:5432/ai_course_platform',
   },
 } satisfies Config;
