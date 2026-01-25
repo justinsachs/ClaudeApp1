@@ -151,7 +151,7 @@
     - name: Run database migrations
       shell: |
         export $(cat {{ app_dir }}/.env | grep -v '^#' | xargs)
-        npm run db:migrate
+        npm run db:migrate:prod
       args:
         chdir: "{{ app_dir }}"
         executable: /bin/bash
@@ -262,7 +262,7 @@
 
     - name: Check application health
       uri:
-        url: "http://localhost:3000/api/health"
+        url: "http://localhost:3000/health"
         status_code: 200
       retries: 3
       delay: 5

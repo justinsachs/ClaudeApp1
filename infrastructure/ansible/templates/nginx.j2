@@ -39,7 +39,7 @@ server {
 
     # Health check
     location /health {
-        proxy_pass http://localhost:3000/api/health;
+        proxy_pass http://localhost:3000/health;
         access_log off;
     }
 
