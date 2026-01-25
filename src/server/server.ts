@@ -87,8 +87,8 @@ async function start() {
     const db = getDrizzleDb();
     console.log('Database connected successfully');
 
-    // Register prompt routes (requires database instance)
-    const promptRoutes = createPromptRoutes(db);
+    // Register prompt routes
+    const promptRoutes = createPromptRoutes();
     app.use('/api/prompts', promptRoutes);
     console.log('Prompt management routes registered');
 

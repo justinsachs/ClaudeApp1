@@ -204,6 +204,67 @@ export const promptVariables = pgTable('prompt_variables', {
   created_at: timestamp('created_at').defaultNow().notNull(),
 });
 
+export const deploymentPrompts = pgTable('deployment_prompts', {
+  id: text('id').primaryKey(),
+  deployment_id: text('deployment_id').notNull().references(() => deployments.id, { onDelete: 'cascade' }),
+  template_id: text('template_id').notNull().references(() => promptTemplates.id, { onDelete: 'cascade' }),
+  custom_template_text: text('custom_template_text'),
+  is_enabled: boolean('is_enabled').default(true),
+  notes: text('notes'),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+  updated_at: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const deploymentVariables = pgTable('deployment_variables', {
+  id: text('id').primaryKey(),
+  deployment_id: text('deployment_id').notNull().references(() => deployments.id, { onDelete: 'cascade' }),
+  variable_id: text('variable_id').notNull().references(() => promptVariables.id, { onDelete: 'cascade' }),
+  value: text('value').notNull(),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+  updated_at: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const coursePrompts = pgTable('course_prompts', {
+  id: text('id').primaryKey(),
+  course_id: uuid('course_id').notNull().references(() => courses.id, { onDelete: 'cascade' }),
+  template_id: text('template_id').notNull().references(() => promptTemplates.id, { onDelete: 'cascade' }),
+  custom_template_text: text('custom_template_text'),
+  is_enabled: boolean('is_enabled').default(true),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+  updated_at: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const courseVariables = pgTable('course_variables', {
+  id: text('id').primaryKey(),
+  course_id: uuid('course_id').notNull().references(() => courses.id, { onDelete: 'cascade' }),
+  variable_id: text('variable_id').notNull().references(() => promptVariables.id, { onDelete: 'cascade' }),
+  value: text('value').notNull(),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+  updated_at: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const sectionVariables = pgTable('section_variables', {
+  id: text('id').primaryKey(),
+  section_id: uuid('section_id').notNull().references(() => sections.id, { onDelete: 'cascade' }),
+  variable_id: text('variable_id').notNull().references(() => promptVariables.id, { onDelete: 'cascade' }),
+  value: text('value').notNull(),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+  updated_at: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const promptExecutions = pgTable('prompt_executions', {
+  id: text('id').primaryKey(),
+  prompt_type: text('prompt_type').notNull(),
+  deployment_id: text('deployment_id').references(() => deployments.id),
+  course_id: uuid('course_id').references(() => courses.id),
+  section_id: uuid('section_id').references(() => sections.id),
+  learner_id: uuid('learner_id').references(() => learners.id),
+  resolved_prompt: text('resolved_prompt').notNull(),
+  ai_service: text('ai_service'),
+  execution_context: text('execution_context'),
+  executed_at: timestamp('executed_at').defaultNow().notNull(),
+});
+
 // ============================================
 // RBAC Tables
 // ============================================
